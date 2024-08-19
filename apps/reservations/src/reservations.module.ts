@@ -10,7 +10,7 @@ import { DatabaseModule, LoggerModule } from '@app/common';
   imports: [
     DatabaseModule,
     MongooseModule.forFeature([{ name: ReservationDocument.name, schema: ReservationSchema }]),
-    LoggerModule
+    LoggerModule,
   ],
   controllers: [ReservationsController],
   providers: [ReservationsService, ReservationsRepository],
