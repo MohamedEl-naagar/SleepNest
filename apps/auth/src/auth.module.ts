@@ -5,7 +5,7 @@ import { UsersModule } from './users/users.module';
 import { LoggerModule } from '@app/common';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import Joi from 'joi';
+import * as  Joi from 'joi';
 
 @Module({
   imports: [
@@ -17,6 +17,7 @@ import Joi from 'joi';
         MONGODB_URI: Joi.string().required(),
         JWT_SECRET: Joi.string().required(),
         JWT_EXPIRATION: Joi.string().required(),
+        PORT: Joi.number().required(),
       }),
     }),
     JwtModule.registerAsync({
