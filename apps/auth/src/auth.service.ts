@@ -1,28 +1,34 @@
-import { Body, HttpException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+// import { UserDocument } from '@app/common';
 import { JwtService } from '@nestjs/jwt';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { UserDocument } from './users/models/user.schema';
-import * as bcrypt from 'bcrypt';
-import { SigninDto } from './dto/signin.dto';
+import { Response } from 'express';
+import { TokenPayload } from './interfaces/token-payload.interface';
 
 @Injectable()
 export class AuthService {
-  constructor(@InjectModel(UserDocument.name) private userModel: Model<UserDocument>,private JwtService:JwtService) {}
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly jwtService: JwtService,
+  ) {}
 
-  async signup(body:SigninDto) {
-    let userExist = await this.userModel.findOne({email:body.email})
-    if(userExist) throw new HttpException("user is already exist",409) ;
-    const hash = bcrypt.hashSync(body.password, 5);
-    body.password = hash
-    return await this.userModel.insertMany(body)
+  async login(user, response: Response) {
+    const tokenPayload: TokenPayload = {
+      userId: user._id.toHexString(),
+    };
+
+    const expires = new Date();
+    expires.setSeconds(
+      expires.getSeconds() + this.configService.get('JWT_EXPIRATION'),
+    );
+
+    const token = this.jwtService.sign(tokenPayload);
+
+    response.cookie('Authentication', token, {
+      httpOnly: true,
+      expires,
+    });
+
+    return token;
   }
-
-  async signin(body:SigninDto) {
-  let userExist = await this.userModel.findOne({email:body.email})
-  if(!(userExist&&bcrypt.compareSync(body.password,userExist.password)))throw new HttpException("incorrect email or password",409) ;
-  let token= await this.JwtService.sign({name:userExist.email},{secret:"nest"})
-  return {token}
-}
-
 }

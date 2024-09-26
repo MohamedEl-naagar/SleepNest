@@ -1,24 +1,27 @@
-import {
-  Body,
-  Controller,
-  Post,
-  UsePipes,
-  ValidationPipe,
-} from '@nestjs/common';
-import { SignupDto } from './dto/signup.dto';
-import { SigninDto } from './dto/signin.dto';
+import { Controller, Post, Res, UseGuards } from '@nestjs/common';
+import { MessagePattern, Payload } from '@nestjs/microservices';
+import { Response } from 'express';
+import { CurrentUser } from '../../../libs/common/src/decorators/current-user.decorator';
 import { AuthService } from './auth.service';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 @Controller('auth')
-@UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
 export class AuthController {
-  constructor(private _AuthService: AuthService) {}
-  @Post('signup')
-  signup(@Body() body: SignupDto) {
-    return this._AuthService.signup(body);
+  constructor(private readonly authService: AuthService) {}
+
+  @UseGuards(JwtAuthGuard)
+  @Post('login')
+  async login(
+    @CurrentUser() user,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const jwt = await this.authService.login(user, response);
+    response.send(jwt);
   }
-  @Post('signin')
-  signin(@Body() body: SigninDto) {
-    return this._AuthService.signin(body);
+
+  @UseGuards(JwtAuthGuard)
+  @MessagePattern('authenticate')
+  async authenticate(@Payload() data: any) {
+    return data.user;
   }
 }
